@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rush AI Butler API</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #030712;
+      --bg-card: rgba(255, 255, 255, 0.04);
+      --bg-card-hover: rgba(255, 255, 255, 0.07);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --purple-500: #8b5cf6;
+      --purple-600: #7c3aed;
+      --violet-500: #8b5cf6;
+      --violet-600: #7c3aed;
+      --gradient: linear-gradient(135deg, #8b5cf6, #6d28d9, #4c1d95);
+      --gradient-accent: linear-gradient(135deg, #a78bfa, #7c3aed);
+      --glass-bg: rgba(139, 92, 246, 0.06);
+      --glass-border: rgba(139, 92, 246, 0.15);
+      --chat-user: linear-gradient(135deg, #7c3aed, #6d28d9);
+      --chat-bot: rgba(255, 255, 255, 0.06);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --radius-xs: 8px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      --shadow-glow: 0 0 40px rgba(139, 92, 246, 0.15);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* Dot grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(rgba(139, 92, 246, 0.12) 1px, transparent 1px);
+      background-size: 28px 28px;
+      z-index: -2;
+      pointer-events: none;
+    }
+
+    /* Gradient orbs */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -10%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .orb-2 {
+      position: fixed;
+      bottom: -20%;
+      right: -10%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(109, 40, 217, 0.1) 0%, transparent 70%);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* ─── Header ─── */
+    header {
+      text-align: center;
+      padding: 60px 20px 40px;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 999px;
+      padding: 6px 18px;
+      font-size: 13px;
+      color: #a78bfa;
+      font-weight: 500;
+      margin-bottom: 20px;
+      backdrop-filter: blur(12px);
+    }
+
+    .logo-badge svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: var(--gradient-accent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.15;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: clamp(0.95rem, 2vw, 1.1rem);
+      margin-top: 12px;
+      font-weight: 400;
+    }
+
+    /* ─── Glass Card ─── */
+    .glass {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .glass:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(139, 92, 246, 0.2);
+      box-shadow: var(--shadow-glow);
+    }
+
+    /* ─── Section Titles ─── */
+    .section-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-title .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--purple-500);
+      box-shadow: 0 0 10px var(--purple-500);
+    }
+
+    /* ─── API Info Card ─── */
+    .api-section {
+      padding: 20px 0 40px;
+    }
+
+    .api-card {
+      padding: 28px;
+      overflow-x: auto;
+    }
+
+    .endpoints-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .endpoints-table th {
+      text-align: left;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0 0 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .endpoints-table td {
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      vertical-align: middle;
+    }
+
+    .endpoints-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .method-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .method-post { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+    .method-get  { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+    .method-delete { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+    .endpoint-path {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.88rem;
+      color: var(--text);
+    }
+
+    .endpoint-desc {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    /* ─── Chat Demo ─── */
+    .chat-section {
+      padding: 0 0 40px;
+    }
+
+    .chat-card {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      height: 520px;
+    }
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+
+    .chat-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chat-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .chat-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: #4ade80;
+    }
+
+    .chat-status .pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4ade80;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+    }
+
+    .session-id {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-right: 6px;
+      scroll-behavior: smooth;
+    }
+
+    .chat-messages::-webkit-scrollbar { width: 4px; }
+    .chat-messages::-webkit-scrollbar-track { background: transparent; }
+    .chat-messages::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 4px; }
+
+    .message {
+      display: flex;
+      flex-direction: column;
+      max-width: 80%;
+      animation: msgIn 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(10px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .message.user {
+      align-self: flex-end;
+    }
+
+    .message.bot {
+      align-self: flex-start;
+    }
+
+    .message-bubble {
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      line-height: 1.55;
+      word-wrap: break-word;
+    }
+
+    .message.user .message-bubble {
+      background: var(--chat-user);
+      color: white;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 4px 15px rgba(124, 58, 237, 0.25);
+    }
+
+    .message.bot .message-bubble {
+      background: var(--chat-bot);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-bottom-left-radius: 4px;
+    }
+
+    .message-time {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      padding: 0 4px;
+    }
+
+    .message.user .message-time {
+      text-align: right;
+    }
+
+    .typing-indicator {
+      align-self: flex-start;
+      display: none;
+    }
+
+    .typing-indicator.active {
+      display: flex;
+    }
+
+    .typing-dots {
+      display: flex;
+      gap: 5px;
+      padding: 14px 18px;
+      background: var(--chat-bot);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      border-bottom-left-radius: 4px;
+    }
+
+    .typing-dots span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--purple-500);
+      animation: typing 1.4s infinite;
+    }
+
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing {
+      0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+      30% { opacity: 1; transform: translateY(-4px); }
+    }
+
+    .chat-input-area {
+      display: flex;
+      gap: 10px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      margin-top: 16px;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs);
+      padding: 12px 16px;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .chat-input:focus {
+      border-color: rgba(139, 92, 246, 0.4);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+
+    .chat-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .send-btn {
+      background: var(--gradient);
+      border: none;
+      border-radius: var(--radius-xs);
+      color: white;
+      padding: 12px 22px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+      white-space: nowrap;
+    }
+
+    .send-btn:hover {
+      opacity: 0.9;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.35);
+    }
+
+    .send-btn:active {
+      transform: scale(0.97);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ─── Features ─── */
+    .features-section {
+      padding: 0 0 60px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .feature-card {
+      padding: 24px;
+      text-align: center;
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 14px;
+      border-radius: 12px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .feature-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .feature-card p {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* ─── Footer ─── */
+    footer {
+      text-align: center;
+      padding: 30px 20px 40px;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    footer a {
+      color: #a78bfa;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    .footer-divider {
+      display: inline-block;
+      margin: 0 8px;
+      opacity: 0.4;
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 640px) {
+      header { padding: 40px 16px 30px; }
+      .api-card, .chat-card, .feature-card { padding: 18px; }
+      .chat-card { height: 460px; }
+      .endpoints-table { font-size: 0.82rem; }
+      .session-id { display: none; }
+      .message { max-width: 90%; }
+      .features-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+    }
+
+    @media (max-width: 400px) {
+      .features-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="orb-2"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="logo-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a7 7 0 0 1 7 7v1a7 7 0 0 1-14 0V9a7 7 0 0 1 7-7z"/>
+          <path d="M8.5 10.5a3.5 3.5 0 0 1 7 0"/>
+          <path d="M9 14v1a3 3 0 0 0 6 0v-1"/>
+          <line x1="12" y1="18" x2="12" y2="22"/>
+        </svg>
+        API v1.0
+      </div>
+      <h1>Rush AI Butler API</h1>
+      <p class="subtitle">AI-Powered Customer Support by Emmanuel Alcazar Jr.</p>
+    </header>
+
+    <!-- API Info -->
+    <section class="api-section">
+      <div class="section-title"><span class="dot"></span> API Endpoints</div>
+      <div class="glass api-card">
+        <table class="endpoints-table">
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>Endpoint</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="method-badge method-post">POST</span></td>
+              <td class="endpoint-path">/api/chat</td>
+              <td class="endpoint-desc">Send a message and get AI response</td>
+            </tr>
+            <tr>
+              <td><span class="method-badge method-get">GET</span></td>
+              <td class="endpoint-path">/api/chat/history</td>
+              <td class="endpoint-desc">Retrieve conversation history</td>
+            </tr>
+            <tr>
+              <td><span class="method-badge method-delete">DELETE</span></td>
+              <td class="endpoint-path">/api/chat</td>
+              <td class="endpoint-desc">Clear conversation history</td>
+            </tr>
+            <tr>
+              <td><span class="method-badge method-post">POST</span></td>
+              <td class="endpoint-path">/api/webhook</td>
+              <td class="endpoint-desc">Register webhook for events</td>
+            </tr>
+            <tr>
+              <td><span class="method-badge method-get">GET</span></td>
+              <td class="endpoint-path">/api/health</td>
+              <td class="endpoint-desc">Health check and service status</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Chat Demo -->
+    <section class="chat-section">
+      <div class="section-title"><span class="dot"></span> Live Demo</div>
+      <div class="glass chat-card">
+        <div class="chat-header">
+          <div class="chat-header-left">
+            <div class="chat-avatar">R</div>
+            <div>
+              <div style="font-weight:600;font-size:0.95rem;">Rush AI Butler</div>
+              <div class="chat-status"><span class="pulse"></span> Online</div>
+            </div>
+          </div>
+          <div class="session-id" id="sessionId"></div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          <div class="message bot">
+            <div class="message-bubble">Hello! I'm Rush, your AI butler. How can I assist you today?</div>
+            <span class="message-time">Just now</span>
+          </div>
+          <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-input-area">
+          <input
+            type="text"
+            class="chat-input"
+            id="chatInput"
+            placeholder="Type your message..."
+            autocomplete="off"
+          />
+          <button class="send-btn" id="sendBtn">Send</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features-section">
+      <div class="section-title"><span class="dot"></span> Features</div>
+      <div class="features-grid">
+        <div class="glass feature-card">
+          <div class="feature-icon">&#128172;</div>
+          <h3>Conversation Memory</h3>
+          <p>Maintains context across messages for natural, coherent dialogue.</p>
+        </div>
+        <div class="glass feature-card">
+          <div class="feature-icon">&#9889;</div>
+          <h3>DeepSeek AI</h3>
+          <p>Powered by DeepSeek's advanced language model for intelligent responses.</p>
+        </div>
+        <div class="glass feature-card">
+          <div class="feature-icon">&#128279;</div>
+          <h3>Webhook Support</h3>
+          <p>Register webhooks to receive real-time event notifications.</p>
+        </div>
+        <div class="glass feature-card">
+          <div class="feature-icon">&#128737;</div>
+          <h3>Rate Limited</h3>
+          <p>Built-in rate limiting ensures fair usage and service stability.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <span>Powered by <a href="https://deepseek.com" target="_blank" rel="noopener">DeepSeek AI</a></span>
+    <span class="footer-divider">|</span>
+    <span>Built by <a href="https://github.com/emmanalcazarjr-ops" target="_blank" rel="noopener">Emmanuel Alcazar Jr.</a></span>
+  </footer>
+
+  <script>
+    (function () {
+      const chatMessages = document.getElementById('chatMessages');
+      const chatInput = document.getElementById('chatInput');
+      const sendBtn = document.getElementById('sendBtn');
+      const typingIndicator = document.getElementById('typingIndicator');
+      const sessionIdEl = document.getElementById('sessionId');
+
+      // Session ID
+      let sessionId = localStorage.getItem('rush_session_id');
+      if (!sessionId) {
+        sessionId = 'sess_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+        localStorage.setItem('rush_session_id', sessionId);
+      }
+      sessionIdEl.textContent = 'ID: ' + sessionId;
+
+      function timeNow() {
+        return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+
+      function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      function addMessage(text, sender) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'message ' + sender;
+
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        bubble.textContent = text;
+
+        const time = document.createElement('span');
+        time.className = 'message-time';
+        time.textContent = timeNow();
+
+        wrapper.appendChild(bubble);
+        wrapper.appendChild(time);
+
+        chatMessages.insertBefore(wrapper, typingIndicator);
+        scrollToBottom();
+      }
+
+      function setLoading(on) {
+        sendBtn.disabled = on;
+        chatInput.disabled = on;
+        typingIndicator.classList.toggle('active', on);
+        if (on) scrollToBottom();
+      }
+
+      async function sendMessage() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        addMessage(text, 'user');
+        chatInput.value = '';
+        setLoading(true);
+
+        try {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text, sessionId: sessionId })
+          });
+
+          if (!res.ok) throw new Error('API returned ' + res.status);
+
+          const data = await res.json();
+          const reply = data.reply || data.response || data.message || 'Sorry, I could not process that.';
+          addMessage(reply, 'bot');
+        } catch (err) {
+          addMessage('Unable to reach the server. Please try again later.', 'bot');
+          console.error('Chat error:', err);
+        } finally {
+          setLoading(false);
+          chatInput.focus();
+        }
+      }
+
+      sendBtn.addEventListener('click', sendMessage);
+      chatInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      scrollToBottom();
+    })();
+  </script>
+</body>
+</html>

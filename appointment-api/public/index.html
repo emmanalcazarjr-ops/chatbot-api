@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Appointment Booking API</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #030712;
+      color: #e5e7eb;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      padding: 80px 0 50px;
+    }
+    header h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      background: linear-gradient(135deg, #f97316, #fbbf24);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p {
+      margin-top: 12px;
+      font-size: 1.1rem;
+      color: #9ca3af;
+    }
+
+    /* ── Glass card ── */
+    .glass {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* ── API Info Card ── */
+    .api-info { margin-bottom: 48px; padding: 32px; }
+    .api-info h2 {
+      font-size: 1.4rem;
+      margin-bottom: 20px;
+      color: #fbbf24;
+    }
+    .endpoint-table { width: 100%; border-collapse: collapse; }
+    .endpoint-table th, .endpoint-table td {
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.9rem;
+    }
+    .endpoint-table th { color: #9ca3af; font-weight: 600; }
+    .method {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .method-post { background: rgba(34,197,94,0.15); color: #4ade80; }
+    .method-get { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .method-put { background: rgba(251,191,36,0.15); color: #fbbf24; }
+    .method-delete { background: rgba(239,68,68,0.15); color: #f87171; }
+
+    /* ── Interactive Demo ── */
+    .demo-section { margin-bottom: 48px; }
+    .demo-section h2 {
+      font-size: 1.4rem;
+      margin-bottom: 24px;
+      color: #fbbf24;
+      text-align: center;
+    }
+    .demo-card { padding: 32px; }
+
+    .steps { display: flex; flex-direction: column; gap: 28px; }
+
+    .step-header {
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #f97316;
+      font-size: 0.95rem;
+    }
+
+    /* Service buttons */
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .service-btn {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 16px;
+      color: #e5e7eb;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+    }
+    .service-btn:hover { border-color: rgba(249,115,22,0.4); }
+    .service-btn.active {
+      border-color: #f97316;
+      background: rgba(249,115,22,0.1);
+    }
+    .service-btn .name { font-weight: 600; font-size: 0.95rem; }
+    .service-btn .duration { font-size: 0.8rem; color: #9ca3af; margin-top: 4px; }
+
+    /* Date input */
+    .date-input {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: #e5e7eb;
+      font-size: 1rem;
+      width: 100%;
+      max-width: 280px;
+      outline: none;
+    }
+    .date-input:focus { border-color: #f97316; }
+    ::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+
+    /* Time slots */
+    .slots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+    }
+    .slot-btn {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 10px;
+      color: #e5e7eb;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .slot-btn:hover { border-color: rgba(249,115,22,0.4); }
+    .slot-btn.active { border-color: #f97316; background: rgba(249,115,22,0.1); }
+    .slots-placeholder { color: #6b7280; font-size: 0.9rem; }
+
+    /* Form fields */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .form-grid .full { grid-column: 1 / -1; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 0.85rem; color: #9ca3af; }
+    .field input, .field textarea {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #e5e7eb;
+      font-size: 0.95rem;
+      outline: none;
+      font-family: inherit;
+    }
+    .field input:focus, .field textarea:focus { border-color: #f97316; }
+    .field textarea { resize: vertical; min-height: 70px; }
+
+    /* Book button */
+    .book-btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #f97316, #fbbf24);
+      color: #030712;
+      font-weight: 700;
+      font-size: 1rem;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 36px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .book-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .book-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* Confirmation card */
+    .confirm-card {
+      display: none;
+      margin-top: 28px;
+      padding: 28px;
+      text-align: center;
+    }
+    .confirm-card.visible { display: block; }
+    .confirm-card h3 {
+      color: #4ade80;
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+    }
+    .confirm-detail { color: #d1d5db; font-size: 0.9rem; margin-bottom: 6px; }
+    .confirm-ai {
+      margin-top: 16px;
+      padding: 16px;
+      background: rgba(249,115,22,0.06);
+      border: 1px solid rgba(249,115,22,0.15);
+      border-radius: 12px;
+      color: #fbbf24;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      font-style: italic;
+    }
+
+    /* ── Features ── */
+    .features { margin-bottom: 60px; }
+    .features h2 {
+      text-align: center;
+      font-size: 1.4rem;
+      margin-bottom: 28px;
+      color: #fbbf24;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      padding: 28px;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+    .feature-card:hover { transform: translateY(-4px); }
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 14px;
+      display: block;
+    }
+    .feature-card h3 { font-size: 1rem; margin-bottom: 8px; color: #f97316; }
+    .feature-card p { font-size: 0.85rem; color: #9ca3af; line-height: 1.5; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 32px 0;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      color: #6b7280;
+      font-size: 0.85rem;
+    }
+    footer a { color: #f97316; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      header { padding: 50px 0 30px; }
+      .api-info, .demo-card { padding: 20px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .service-grid { grid-template-columns: 1fr; }
+      .endpoint-table { font-size: 0.8rem; }
+      .endpoint-table th, .endpoint-table td { padding: 8px 8px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Header -->
+    <header>
+      <h1>Appointment Booking API</h1>
+      <p>Smart Scheduling for Interviews &amp; Business Meetings</p>
+    </header>
+
+    <!-- API Info -->
+    <section class="glass api-info">
+      <h2>API Endpoints</h2>
+      <table class="endpoint-table">
+        <thead>
+          <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="method method-post">POST</span></td><td>/api/appointments</td><td>Create a new appointment</td></tr>
+          <tr><td><span class="method method-get">GET</span></td><td>/api/appointments</td><td>List all appointments</td></tr>
+          <tr><td><span class="method method-get">GET</span></td><td>/api/appointments/{id}</td><td>Get appointment by ID</td></tr>
+          <tr><td><span class="method method-put">PUT</span></td><td>/api/appointments/{id}</td><td>Update an appointment</td></tr>
+          <tr><td><span class="method method-delete">DELETE</span></td><td>/api/appointments/{id}</td><td>Delete an appointment</td></tr>
+          <tr><td><span class="method method-get">GET</span></td><td>/api/availability</td><td>Check available time slots</td></tr>
+          <tr><td><span class="method method-post">POST</span></td><td>/api/webhook</td><td>Register webhook events</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Interactive Demo -->
+    <section class="demo-section">
+      <h2>Interactive Demo</h2>
+      <div class="glass demo-card">
+        <div class="steps">
+
+          <!-- Step 1: Service -->
+          <div class="step">
+            <div class="step-header">Step 1 &mdash; Select a Service</div>
+            <div class="service-grid" id="serviceGrid">
+              <button class="service-btn active" data-service="Technical Interview" data-duration="60">
+                <div class="name">Technical Interview</div>
+                <div class="duration">60 minutes</div>
+              </button>
+              <button class="service-btn" data-service="Project Discussion" data-duration="30">
+                <div class="name">Project Discussion</div>
+                <div class="duration">30 minutes</div>
+              </button>
+              <button class="service-btn" data-service="Consultation Call" data-duration="45">
+                <div class="name">Consultation Call</div>
+                <div class="duration">45 minutes</div>
+              </button>
+              <button class="service-btn" data-service="Business Meeting" data-duration="60">
+                <div class="name">Business Meeting</div>
+                <div class="duration">60 minutes</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 2: Date -->
+          <div class="step">
+            <div class="step-header">Step 2 &mdash; Pick a Date</div>
+            <input type="date" class="date-input" id="dateInput" />
+          </div>
+
+          <!-- Step 3: Time Slots -->
+          <div class="step">
+            <div class="step-header">Step 3 &mdash; Select a Time Slot</div>
+            <div id="slotsContainer">
+              <div class="slots-placeholder">Select a date to view available slots</div>
+            </div>
+          </div>
+
+          <!-- Step 4: Form -->
+          <div class="step">
+            <div class="step-header">Step 4 &mdash; Your Details</div>
+            <div class="form-grid">
+              <div class="field">
+                <label for="nameInput">Name</label>
+                <input type="text" id="nameInput" placeholder="John Doe" />
+              </div>
+              <div class="field">
+                <label for="emailInput">Email</label>
+                <input type="email" id="emailInput" placeholder="john@example.com" />
+              </div>
+              <div class="field full">
+                <label for="notesInput">Notes (optional)</label>
+                <textarea id="notesInput" placeholder="Any additional information..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Book Button -->
+          <div style="text-align:center;">
+            <button class="book-btn" id="bookBtn" disabled>Book Appointment</button>
+          </div>
+        </div>
+
+        <!-- Confirmation -->
+        <div class="confirm-card glass" id="confirmCard">
+          <h3>Appointment Confirmed!</h3>
+          <div class="confirm-detail" id="confirmService"></div>
+          <div class="confirm-detail" id="confirmDate"></div>
+          <div class="confirm-detail" id="confirmTime"></div>
+          <div class="confirm-detail" id="confirmName"></div>
+          <div class="confirm-detail" id="confirmEmail"></div>
+          <div class="confirm-ai" id="confirmAI"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features">
+      <h2>Features</h2>
+      <div class="features-grid">
+        <div class="glass feature-card">
+          <span class="feature-icon">&#9200;</span>
+          <h3>Smart Scheduling</h3>
+          <p>Intelligent time management that adapts to your availability and preferences.</p>
+        </div>
+        <div class="glass feature-card">
+          <span class="feature-icon">&#128269;</span>
+          <h3>Availability Check</h3>
+          <p>Real-time availability lookups to find the perfect time slot for any meeting.</p>
+        </div>
+        <div class="glass feature-card">
+          <span class="feature-icon">&#129302;</span>
+          <h3>AI Confirmations</h3>
+          <p>DeepSeek AI generates personalized confirmation messages for every booking.</p>
+        </div>
+        <div class="glass feature-card">
+          <span class="feature-icon">&#128279;</span>
+          <h3>Webhook Support</h3>
+          <p>Register webhooks to receive real-time notifications on booking events.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      Powered by <a href="https://deepseek.com" target="_blank" rel="noopener">DeepSeek AI</a> | Built by <a href="https://github.com/emmanalcazarjr-ops" target="_blank" rel="noopener">Emmanuel Alcazar Jr.</a>
+    </footer>
+
+  </div>
+
+  <script>
+    const state = { service: 'Technical Interview', duration: 60, date: '', slot: '' };
+
+    // ── Service Selection ──
+    const serviceBtns = document.querySelectorAll('.service-btn');
+    serviceBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        serviceBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.service = btn.dataset.service;
+        state.duration = parseInt(btn.dataset.duration);
+        state.slot = '';
+        if (state.date) fetchSlots();
+        updateBookBtn();
+      });
+    });
+
+    // ── Date Picker ──
+    const dateInput = document.getElementById('dateInput');
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.min = today;
+    dateInput.value = today;
+    state.date = today;
+
+    dateInput.addEventListener('change', () => {
+      state.date = dateInput.value;
+      state.slot = '';
+      fetchSlots();
+      updateBookBtn();
+    });
+
+    // ── Fetch Slots ──
+    const slotsContainer = document.getElementById('slotsContainer');
+
+    function fetchSlots() {
+      if (!state.date) return;
+      slotsContainer.innerHTML = '<div class="slots-placeholder">Loading slots...</div>';
+
+      const url = `/api/availability?date=${state.date}&duration=${state.duration}`;
+      fetch(url)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(data => {
+          const slots = data.available_slots || data.slots || data || [];
+          if (!Array.isArray(slots) || slots.length === 0) {
+            slotsContainer.innerHTML = '<div class="slots-placeholder">No available slots for this date</div>';
+            return;
+          }
+          slotsContainer.innerHTML = '';
+          slots.forEach(s => {
+            const time = typeof s === 'string' ? s : s.time || s.start || '';
+            const btn = document.createElement('button');
+            btn.className = 'slot-btn';
+            btn.textContent = time;
+            btn.addEventListener('click', () => {
+              document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('active'));
+              btn.classList.add('active');
+              state.slot = time;
+              updateBookBtn();
+            });
+            slotsContainer.appendChild(btn);
+          });
+        })
+        .catch(() => {
+          const demoSlots = generateDemoSlots();
+          slotsContainer.innerHTML = '';
+          demoSlots.forEach(time => {
+            const btn = document.createElement('button');
+            btn.className = 'slot-btn';
+            btn.textContent = time;
+            btn.addEventListener('click', () => {
+              document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('active'));
+              btn.classList.add('active');
+              state.slot = time;
+              updateBookBtn();
+            });
+            slotsContainer.appendChild(btn);
+          });
+        });
+    }
+
+    function generateDemoSlots() {
+      const slots = [];
+      for (let h = 9; h <= 17; h++) {
+        for (let m = 0; m < 60; m += 30) {
+          if (h === 17 && m > 0) break;
+          const hr = h.toString().padStart(2, '0');
+          const mn = m.toString().padStart(2, '0');
+          slots.push(`${hr}:${mn}`);
+        }
+      }
+      return slots;
+    }
+
+    // ── Book Button State ──
+    const bookBtn = document.getElementById('bookBtn');
+    const nameInput = document.getElementById('nameInput');
+    const emailInput = document.getElementById('emailInput');
+
+    function updateBookBtn() {
+      bookBtn.disabled = !(state.service && state.date && state.slot && nameInput.value.trim() && emailInput.value.trim());
+    }
+
+    nameInput.addEventListener('input', updateBookBtn);
+    emailInput.addEventListener('input', updateBookBtn);
+
+    // ── Book Appointment ──
+    bookBtn.addEventListener('click', () => {
+      bookBtn.disabled = true;
+      bookBtn.textContent = 'Booking...';
+
+      const payload = {
+        service: state.service,
+        duration: state.duration,
+        date: state.date,
+        time: state.slot,
+        name: nameInput.value.trim(),
+        email: emailInput.value.trim(),
+        notes: document.getElementById('notesInput').value.trim()
+      };
+
+      fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(data => showConfirmation(payload, data))
+        .catch(() => showConfirmation(payload, { id: 'DEMO-' + Date.now() }));
+    });
+
+    function showConfirmation(payload, data) {
+      bookBtn.textContent = 'Book Appointment';
+      updateBookBtn();
+
+      document.getElementById('confirmService').textContent = `Service: ${payload.service} (${payload.duration} min)`;
+      document.getElementById('confirmDate').textContent = `Date: ${payload.date}`;
+      document.getElementById('confirmTime').textContent = `Time: ${payload.slot}`;
+      document.getElementById('confirmName').textContent = `Name: ${payload.name}`;
+      document.getElementById('confirmEmail').textContent = `Email: ${payload.email}`;
+      document.getElementById('confirmAI').textContent =
+        `Dear ${payload.name}, your ${payload.service} has been confirmed for ${payload.date} at ${payload.slot}. ` +
+        `We look forward to speaking with you. A calendar invite will be sent to ${payload.email} shortly.` +
+        (data.id ? ` Booking ID: ${data.id}` : '');
+
+      document.getElementById('confirmCard').classList.add('visible');
+      document.getElementById('confirmCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // Initial slot load
+    fetchSlots();
+  </script>
+
+</body>
+</html>

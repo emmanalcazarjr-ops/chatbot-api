@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Generation API</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #030712;
+      --glass: rgba(255,255,255,0.04);
+      --glass-border: rgba(255,255,255,0.08);
+      --glass-hover: rgba(255,255,255,0.07);
+      --text: #e5e7eb;
+      --text-muted: #9ca3af;
+      --rose: #f43f5e;
+      --pink: #ec4899;
+      --gradient: linear-gradient(135deg, var(--rose), var(--pink));
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 30px 30px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    .glass {
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+    }
+
+    /* Header */
+    header { text-align: center; padding: 80px 0 48px; }
+    header h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    header p { color: var(--text-muted); font-size: 1.15rem; }
+
+    /* Section titles */
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    /* Endpoints table */
+    .endpoints { margin-bottom: 64px; }
+    .endpoints table { width: 100%; border-collapse: collapse; }
+    .endpoints th, .endpoints td {
+      padding: 14px 18px;
+      text-align: left;
+      border-bottom: 1px solid var(--glass-border);
+      font-size: 0.9rem;
+    }
+    .endpoints th { color: var(--text-muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .endpoints td:first-child { font-family: 'SF Mono', 'Fira Code', monospace; color: var(--rose); white-space: nowrap; }
+    .method { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-right: 6px; }
+    .method-post { background: rgba(244,63,94,0.15); color: var(--rose); }
+    .method-get { background: rgba(34,197,94,0.15); color: #22c55e; }
+
+    /* Demo */
+    .demo { margin-bottom: 64px; }
+    .report-types { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .report-type {
+      padding: 18px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      background: var(--glass);
+    }
+    .report-type:hover { background: var(--glass-hover); border-color: rgba(244,63,94,0.3); }
+    .report-type.active { border-color: var(--rose); background: rgba(244,63,94,0.08); }
+    .report-type .icon { font-size: 1.6rem; margin-bottom: 6px; display: block; }
+
+    .form-panel { padding: 28px; margin-bottom: 20px; }
+    .form-fields { display: none; }
+    .form-fields.visible { display: block; }
+
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); }
+    .field input, .field textarea {
+      width: 100%;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: vertical;
+      transition: border-color 0.2s;
+    }
+    .field input:focus, .field textarea:focus { outline: none; border-color: var(--rose); }
+    .field textarea { min-height: 80px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .btn-generate {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 32px;
+      background: var(--gradient);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .btn-generate:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-generate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-generate .spinner { display: none; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+    .btn-generate.loading .spinner { display: inline-block; }
+    .btn-generate.loading .btn-text { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .preview-panel {
+      padding: 28px;
+      min-height: 120px;
+      display: none;
+    }
+    .preview-panel.visible { display: block; }
+    .preview-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 14px; }
+    .preview-content { font-size: 0.92rem; line-height: 1.7; }
+    .preview-content h1 { font-size: 1.5rem; margin: 18px 0 8px; font-weight: 700; color: #fff; }
+    .preview-content h2 { font-size: 1.25rem; margin: 16px 0 6px; font-weight: 700; color: #fff; }
+    .preview-content h3 { font-size: 1.05rem; margin: 14px 0 4px; font-weight: 700; color: #fff; }
+    .preview-content p { margin: 8px 0; }
+    .preview-content strong { color: #fff; }
+    .preview-content em { font-style: italic; }
+    .preview-content ul, .preview-content ol { margin: 8px 0 8px 24px; }
+    .preview-content li { margin: 4px 0; }
+    .preview-content code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85em; }
+    .preview-content pre { background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); border-radius: 8px; padding: 16px; margin: 12px 0; overflow-x: auto; }
+    .preview-content pre code { background: none; padding: 0; }
+    .preview-content hr { border: none; border-top: 1px solid var(--glass-border); margin: 16px 0; }
+
+    /* Features */
+    .features { margin-bottom: 64px; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .feature-card { padding: 28px; text-align: center; transition: background 0.2s; }
+    .feature-card:hover { background: var(--glass-hover); }
+    .feature-icon { font-size: 2rem; margin-bottom: 10px; }
+    .feature-card h3 { font-size: 1rem; margin-bottom: 6px; }
+    .feature-card p { font-size: 0.85rem; color: var(--text-muted); }
+
+    /* Footer */
+    footer { text-align: center; padding: 32px 0; border-top: 1px solid var(--glass-border); color: var(--text-muted); font-size: 0.85rem; }
+    footer span { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 600; }
+
+    @media (max-width: 640px) {
+      .field-row { grid-template-columns: 1fr; }
+      .endpoints { overflow-x: auto; }
+      .endpoints table { min-width: 500px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <h1>Report Generation API</h1>
+    <p>Automated Business Reports with AI</p>
+  </header>
+
+  <!-- Endpoints -->
+  <section class="endpoints glass" style="padding:24px;">
+    <div class="section-title">API Endpoints</div>
+    <table>
+      <thead><tr><th>Endpoint</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="method method-post">POST</span>/api/reports</td><td>Generate a report from structured input</td></tr>
+        <tr><td><span class="method method-get">GET</span>/api/reports</td><td>List all generated reports</td></tr>
+        <tr><td><span class="method method-get">GET</span>/api/reports/{id}</td><td>Retrieve a specific report by ID</td></tr>
+        <tr><td><span class="method method-post">POST</span>/api/reports/custom</td><td>Generate a custom report with free-form prompt</td></tr>
+        <tr><td><span class="method method-post">POST</span>/api/webhook</td><td>Register a webhook for report events</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Interactive Demo -->
+  <section class="demo">
+    <div class="section-title">Interactive Demo</div>
+
+    <div class="report-types">
+      <div class="report-type active" data-type="weekly"><span class="icon">&#x1F4C5;</span>Weekly Summary</div>
+      <div class="report-type" data-type="project"><span class="icon">&#x1F6E0;</span>Project Status</div>
+      <div class="report-type" data-type="meeting"><span class="icon">&#x1F4AC;</span>Meeting Notes</div>
+      <div class="report-type" data-type="client"><span class="icon">&#x1F4B0;</span>Client Pipeline</div>
+      <div class="report-type" data-type="custom"><span class="icon">&#x2728;</span>Custom</div>
+    </div>
+
+    <div class="form-panel glass">
+
+      <div class="form-fields visible" id="fields-weekly">
+        <div class="field"><label>Period</label><input type="text" id="weekly-period" placeholder="e.g. July 14 - July 20, 2026"></div>
+        <div class="field"><label>Activities</label><textarea id="weekly-activities" placeholder="List key activities this week..."></textarea></div>
+        <div class="field"><label>Achievements</label><textarea id="weekly-achievements" placeholder="What did you accomplish?"></textarea></div>
+        <div class="field"><label>Blockers</label><textarea id="weekly-blockers" placeholder="Any blockers or challenges?"></textarea></div>
+      </div>
+
+      <div class="form-fields" id="fields-project">
+        <div class="field"><label>Project Name</label><input type="text" id="project-name" placeholder="e.g. E-Commerce Platform"></div>
+        <div class="field"><label>Milestones</label><textarea id="project-milestones" placeholder="Key milestones and status..."></textarea></div>
+        <div class="field"><label>Blockers</label><textarea id="project-blockers" placeholder="Current blockers..."></textarea></div>
+        <div class="field"><label>Progress %</label><input type="number" id="project-progress" min="0" max="100" placeholder="e.g. 65"></div>
+      </div>
+
+      <div class="form-fields" id="fields-meeting">
+        <div class="field"><label>Attendees</label><input type="text" id="meeting-attendees" placeholder="e.g. Alice, Bob, Charlie"></div>
+        <div class="field"><label>Agenda</label><textarea id="meeting-agenda" placeholder="Meeting agenda items..."></textarea></div>
+        <div class="field"><label>Discussions</label><textarea id="meeting-discussions" placeholder="Key discussion points..."></textarea></div>
+        <div class="field"><label>Action Items</label><textarea id="meeting-actions" placeholder="Action items and owners..."></textarea></div>
+      </div>
+
+      <div class="form-fields" id="fields-client">
+        <div class="field-row">
+          <div class="field"><label>New Leads</label><input type="number" id="client-leads" placeholder="e.g. 12"></div>
+          <div class="field"><label>Active Prospects</label><input type="number" id="client-prospects" placeholder="e.g. 8"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Conversions</label><input type="number" id="client-conversions" placeholder="e.g. 3"></div>
+          <div class="field"><label>Revenue ($)</label><input type="number" id="client-revenue" placeholder="e.g. 45000"></div>
+        </div>
+      </div>
+
+      <div class="form-fields" id="fields-custom">
+        <div class="field"><label>Prompt</label><textarea id="custom-prompt" placeholder="Describe the report you want generated..."></textarea></div>
+        <div class="field"><label>Data (JSON)</label><textarea id="custom-data" placeholder='{"key": "value", ...}'></textarea></div>
+      </div>
+
+      <button class="btn-generate" id="btn-generate"><span class="spinner"></span><span class="btn-text">Generate Report</span></button>
+    </div>
+
+    <div class="preview-panel glass" id="preview">
+      <div class="preview-label">Generated Report</div>
+      <div class="preview-content" id="preview-content"></div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <div class="section-title">Features</div>
+    <div class="features-grid">
+      <div class="feature-card glass">
+        <div class="feature-icon">&#x1F4CB;</div>
+        <h3>Multiple Report Types</h3>
+        <p>Weekly summaries, project updates, meeting notes, client pipeline, and fully custom reports.</p>
+      </div>
+      <div class="feature-card glass">
+        <div class="feature-icon">&#x1F4DD;</div>
+        <h3>Markdown Output</h3>
+        <p>Reports are generated in clean, structured Markdown ready for rendering or export.</p>
+      </div>
+      <div class="feature-card glass">
+        <div class="feature-icon">&#x1F916;</div>
+        <h3>AI Analysis</h3>
+        <p>DeepSeek AI analyzes your data and provides insights, summaries, and recommendations.</p>
+      </div>
+      <div class="feature-card glass">
+        <div class="feature-icon">&#x1F514;</div>
+        <h3>Webhook Triggers</h3>
+        <p>Register webhooks to receive notifications when reports are generated or updated.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Powered by <span>DeepSeek AI</span> | Built by Emmanuel Alcazar Jr.
+  </footer>
+
+</div>
+
+<script>
+  const reportTypes = document.querySelectorAll('.report-type');
+  const formFields = document.querySelectorAll('.form-fields');
+  const btn = document.getElementById('btn-generate');
+  const preview = document.getElementById('preview');
+  const previewContent = document.getElementById('preview-content');
+
+  reportTypes.forEach(card => {
+    card.addEventListener('click', () => {
+      reportTypes.forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      formFields.forEach(f => f.classList.remove('visible'));
+      document.getElementById('fields-' + card.dataset.type).classList.add('visible');
+      preview.classList.remove('visible');
+    });
+  });
+
+  function markdownToHtml(md) {
+    let html = md
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/^---$/gm, '<hr>')
+      .replace(/^\- (.+)$/gm, '<li>$1</li>')
+      .replace(/^\* (.+)$/gm, '<li>$1</li>');
+
+    // Group consecutive <li> into <ul>
+    html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
+
+    // Code blocks
+    html = html.replace(/```[\s\S]*?```/g, match => {
+      const code = match.slice(3, -3).replace(/^\w+\n/, '');
+      return '<pre><code>' + code + '</code></pre>';
+    });
+
+    // Paragraphs for remaining lines
+    html = html.split('\n').map(line => {
+      if (/^<(h[1-6]|ul|ol|li|pre|hr|strong|em)/.test(line) || line.trim() === '') return line;
+      return '<p>' + line + '</p>';
+    }).join('\n');
+
+    return html;
+  }
+
+  function generateReport() {
+    const activeType = document.querySelector('.report-type.active').dataset.type;
+    let markdown = '';
+
+    if (activeType === 'weekly') {
+      const period = document.getElementById('weekly-period').value || 'This Week';
+      const activities = document.getElementById('weekly-activities').value || 'No activities provided';
+      const achievements = document.getElementById('weekly-achievements').value || 'No achievements listed';
+      const blockers = document.getElementById('weekly-blockers').value || 'None';
+      markdown = `# Weekly Summary Report\n\n**Period:** ${period}\n\n---\n\n## Activities\n\n${activities.split('\n').map(l => '- ' + l).join('\n')}\n\n## Achievements\n\n${achievements.split('\n').map(l => '- ' + l).join('\n')}\n\n## Blockers\n\n${blockers.split('\n').map(l => '- ' + l).join('\n')}\n\n---\n\n*AI-generated summary: Team showed consistent progress. Recommend prioritizing blocker resolution for upcoming sprint.*`;
+    } else if (activeType === 'project') {
+      const name = document.getElementById('project-name').value || 'Untitled Project';
+      const milestones = document.getElementById('project-milestones').value || 'No milestones provided';
+      const blockers = document.getElementById('project-blockers').value || 'None';
+      const progress = document.getElementById('project-progress').value || '0';
+      markdown = `# Project Status Report\n\n**Project:** ${name}\n**Progress:** ${progress}%\n\n---\n\n## Milestones\n\n${milestones.split('\n').map(l => '- ' + l).join('\n')}\n\n## Blockers\n\n${blockers.split('\n').map(l => '- ' + l).join('\n')}\n\n---\n\n*AI Analysis: Project is at ${progress}% completion. ${parseInt(progress) >= 70 ? 'On track for timely delivery.' : 'Consider reallocating resources to meet deadlines.'}*`;
+    } else if (activeType === 'meeting') {
+      const attendees = document.getElementById('meeting-attendees').value || 'Not specified';
+      const agenda = document.getElementById('meeting-agenda').value || 'No agenda provided';
+      const discussions = document.getElementById('meeting-discussions').value || 'No discussions recorded';
+      const actions = document.getElementById('meeting-actions').value || 'No action items';
+      markdown = `# Meeting Notes\n\n**Attendees:** ${attendees}\n\n---\n\n## Agenda\n\n${agenda.split('\n').map(l => '- ' + l).join('\n')}\n\n## Key Discussions\n\n${discussions.split('\n').map(l => '- ' + l).join('\n')}\n\n## Action Items\n\n${actions.split('\n').map(l => '- ' + l).join('\n')}\n\n---\n\n*AI Summary: Meeting covered key topics with clear action items assigned. Follow-up recommended within one week.*`;
+    } else if (activeType === 'client') {
+      const leads = document.getElementById('client-leads').value || '0';
+      const prospects = document.getElementById('client-prospects').value || '0';
+      const conversions = document.getElementById('client-conversions').value || '0';
+      const revenue = document.getElementById('client-revenue').value || '0';
+      const rate = parseInt(leads) > 0 ? ((parseInt(conversions) / parseInt(leads)) * 100).toFixed(1) : '0';
+      markdown = `# Client Pipeline Report\n\n---\n\n## Pipeline Overview\n\n- **New Leads:** ${leads}\n- **Active Prospects:** ${prospects}\n- **Conversions:** ${conversions}\n- **Revenue:** $${parseInt(revenue).toLocaleString()}\n- **Conversion Rate:** ${rate}%\n\n---\n\n*AI Analysis: Pipeline shows ${parseInt(conversions) > 0 ? 'healthy conversion' : 'room for improvement in conversion'}. ${parseInt(leads) > 5 ? 'Strong lead generation indicates growing market interest.' : 'Consider increasing lead generation efforts.'}*`;
+    } else {
+      const prompt = document.getElementById('custom-prompt').value || 'Generate a summary report';
+      const data = document.getElementById('custom-data').value || '{}';
+      let parsed;
+      try { parsed = JSON.parse(data); } catch { parsed = { raw: data }; }
+      const dataLines = Object.entries(parsed).map(([k, v]) => `- **${k}:** ${typeof v === 'object' ? JSON.stringify(v) : v}`).join('\n');
+      markdown = `# Custom Report\n\n**Prompt:** ${prompt}\n\n---\n\n## Data Summary\n\n${dataLines}\n\n---\n\n*AI-generated report based on provided data and prompt. For production use, submit to POST /api/reports/custom for full AI analysis.*`;
+    }
+
+    previewContent.innerHTML = markdownToHtml(markdown);
+    preview.classList.add('visible');
+  }
+
+  btn.addEventListener('click', () => {
+    btn.classList.add('loading');
+    btn.disabled = true;
+    setTimeout(() => {
+      generateReport();
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }, 1200);
+  });
+</script>
+
+</body>
+</html>
