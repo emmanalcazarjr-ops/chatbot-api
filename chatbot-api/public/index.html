@@ -698,13 +698,44 @@
         chatMessages.scrollTop = chatMessages.scrollHeight;
       }
 
+      function parseMarkdown(text) {
+        // Escape HTML to prevent XSS
+        let html = text
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+
+        // Bold: **text** or __text__
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+
+        // Italic: *text* or _text_
+        html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+
+        // Inline code: `code`
+        html = html.replace(/`(.+?)`/g, '<code style="background:rgba(139,92,246,0.15);padding:2px 6px;border-radius:4px;font-size:0.85em;">$1</code>');
+
+        // Line breaks
+        html = html.replace(/\n/g, '<br>');
+
+        // Bullet points: - item or * item
+        html = html.replace(/^[\-\*]\s+(.+)$/gm, '<span style="display:block;padding-left:12px;">&bull; $1</span>');
+
+        return html;
+      }
+
       function addMessage(text, sender) {
         const wrapper = document.createElement('div');
         wrapper.className = 'message ' + sender;
 
         const bubble = document.createElement('div');
         bubble.className = 'message-bubble';
-        bubble.textContent = text;
+        if (sender === 'bot') {
+          bubble.innerHTML = parseMarkdown(text);
+        } else {
+          bubble.textContent = text;
+        }
 
         const time = document.createElement('span');
         time.className = 'message-time';
