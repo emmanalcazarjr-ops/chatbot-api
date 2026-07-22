@@ -91,10 +91,16 @@ async def chat(request: Request, body: ChatRequest):
     if not allowed:
         raise HTTPException(status_code=429, detail=f"Rate limit exceeded. Retry after {retry_after}s")
 
+    # Allow demo chat without API key, but require key for external usage
     auth_header = request.headers.get("Authorization")
-    valid, error = validate_api_key(auth_header)
-    if not valid:
-        raise HTTPException(status_code=401, detail=error)
+    origin = request.headers.get("origin", "")
+    referer = request.headers.get("referer", "")
+    is_demo = not auth_header and ("chatbot-api" in origin or "chatbot-api" in referer or not origin)
+    
+    if not is_demo:
+        valid, error = validate_api_key(auth_header)
+        if not valid:
+            raise HTTPException(status_code=401, detail=error)
 
     session_id = body.session_id or str(uuid.uuid4())
     user_message = body.message.strip()
