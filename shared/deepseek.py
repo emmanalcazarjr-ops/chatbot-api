@@ -5,7 +5,7 @@ import urllib.error
 
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
-DEEPSEEK_MODEL = "deepseek-chat"
+DEEPSEEK_MODEL = "deepseek-v4-flash"
 
 
 def call_deepseek(prompt, system_prompt="You are a helpful assistant.", max_tokens=1000, temperature=0.7):
