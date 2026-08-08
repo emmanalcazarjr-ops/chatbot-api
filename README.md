@@ -2,6 +2,12 @@
 
 An AI-powered customer support chatbot built with FastAPI and DeepSeek AI. Rush maintains conversation memory across sessions, supports webhook integrations for automation platforms (n8n, Zapier, Make, GoHighLevel), and includes rate limiting and API key authentication. The chatbot is designed to answer questions about Emmanuel's projects, skills, and experience, making it a conversational portfolio assistant.
 
+## Screenshots
+
+| Landing Page | API Docs (Swagger UI) |
+|---|---|
+| ![Landing Page](screenshots/home.png) | ![API Docs](screenshots/docs.png) |
+
 ## Tech Stack
 
 | Component | Technology |
@@ -88,6 +94,29 @@ uvicorn api.index:app --reload
 - API: https://chatbot-api-two-teal.vercel.app
 - Landing Page: https://chatbot-api-two-teal.vercel.app
 - Swagger Docs: https://chatbot-api-two-teal.vercel.app/docs
+
+## Case Study
+
+**Problem:** Emmanuel's portfolio needed an always-on conversational touchpoint that could answer visitor questions about his projects, skills, and experience — without manual response time.
+
+**Solution:** A customer-support-style AI chatbot ("Rush") that answers portfolio questions with conversation memory, webhook automation, API key authentication, and rate limiting.
+
+**Workflow:**
+1. Visitors interact with the live chat widget or call the API directly
+2. The bot maintains session memory so follow-up questions keep context
+3. Messages can also arrive via webhook from automation platforms (n8n, Zapier, Make, GoHighLevel)
+4. All conversations persist in PostgreSQL for history and auditing
+
+**Tools & Technologies:** Python 3.12, FastAPI, DeepSeek AI (deepseek-chat), Neon PostgreSQL, Vercel Serverless Functions, Swagger UI
+
+**Result:** A production-grade conversational AI assistant deployed live on Vercel, available 24/7 to any number of concurrent visitors.
+
+**Business Impact:**
+- Gives employers and clients an immediate, interactive demonstration of AI engineering skills
+- Automates first-contact Q&A, reducing friction for recruiters and visitors
+- Shows production-level engineering: authentication, rate limiting, persistence, webhooks, and auto-generated docs
+
+**What I built:** The full backend API (chat, history, webhook, health endpoints), DeepSeek integration layer, PostgreSQL schema, rate limiting and auth middleware, Vercel deployment config, and the landing-page demo.
 
 ## Author
 
