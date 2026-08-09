@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from shared.deepseek import call_deepseek_with_messages
+from shared import supabase
 
 app = FastAPI(title="Rush AI Butler API", version="1.0.0")
 
@@ -39,7 +40,7 @@ Projects: Core Banking System, Fraud Detection, Credit Risk Predictor, Stock Pri
 
 You help visitors learn about his projects, skills, and experience. Keep responses concise and helpful. Be warm, professional, and helpful."""
 
-# In-memory conversation storage (for demo - no database required)
+# In-memory fallback used only when Supabase is not configured
 conversations = {}
 
 
@@ -75,32 +76,40 @@ async def chat(request: Request, body: ChatRequest):
     if not user_message:
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
-    # Get or create conversation history
-    if session_id not in conversations:
-        conversations[session_id] = []
+    # Load conversation history (Supabase-backed, with in-memory fallback)
+    stored = supabase.get_messages(session_id)
+    if stored is None:
+        history = conversations.get(session_id, [])
+    else:
+        history = stored
 
-    # Add user message to history
-    conversations[session_id].append({"role": "user", "content": user_message})
+    history = list(history)
+    history.append({"role": "user", "content": user_message})
 
     # Build messages for AI
     messages = [{"role": "system", "content": RUSH_SYSTEM_PROMPT}]
-    messages.extend(conversations[session_id])
+    messages.extend(history)
 
     # Call DeepSeek AI
     result = call_deepseek_with_messages(messages, max_tokens=1000, temperature=0.7)
 
     if not result["success"]:
-        # Remove the user message if AI failed
-        conversations[session_id].pop()
         raise HTTPException(status_code=500, detail=f"AI error: {result['error']}")
 
     assistant_message = result["content"]
 
-    # Add assistant response to history
-    conversations[session_id].append({"role": "assistant", "content": assistant_message})
-
-    # Keep only last 20 messages per session
-    if len(conversations[session_id]) > 20:
+    # Persist both turns
+    if supabase.is_configured():
+        supabase.append_message(session_id, "user", user_message)
+        supabase.append_message(session_id, "assistant", assistant_message)
+    else:
+        conversations.setdefault(session_id, []).extend(
+            [
+                {"role": "user", "content": user_message},
+                {"role": "assistant", "content": assistant_message},
+            ]
+        )
+        # Keep only last 20 messages per session
         conversations[session_id] = conversations[session_id][-20:]
 
     return {
