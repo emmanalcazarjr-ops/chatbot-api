@@ -1,6 +1,12 @@
 # Rush AI Butler API
 
+[![CI](https://github.com/emmanalcazarjr-ops/chatbot-api/actions/workflows/ci.yml/badge.svg)](https://github.com/emmanalcazarjr-ops/chatbot-api/actions/workflows/ci.yml)
+![Tests](https://img.shields.io/badge/tests-10%20passing-brightgreen)
+
 An AI-powered customer support chatbot built with FastAPI and DeepSeek AI. Rush maintains conversation memory across sessions, supports webhook integrations for automation platforms (n8n, Zapier, Make, GoHighLevel), and includes rate limiting and API key authentication. The chatbot is designed to answer questions about Emmanuel's projects, skills, and experience, making it a conversational portfolio assistant.
+
+**Production practices:** CI pipeline (GitHub Actions) runs the unit-test suite on every push — API contract tests via FastAPI TestClient, offline DeepSeek client tests, and session-memory persistence checks.
+
 
 ## Screenshots
 
