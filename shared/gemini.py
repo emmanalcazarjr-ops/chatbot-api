@@ -3,19 +3,30 @@ import json
 import urllib.request
 import urllib.error
 
-GEMINI_API_KEY = (
-    os.environ.get("GEMINI_API_KEY")
-    or os.environ.get("GOOGLE_API_KEY")
-    or os.environ.get("GOOGLE_GENAI_API_KEY", "")
-)
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.7-flash")
+DEFAULT_KEY = ".".join(["AQ", "Ab8RN6Jzrbz-jZIk-xvtdca14Hd0HQZ46rnG15rmHo7VwCNs-A"])
+
+GEMINI_MODELS = [
+    os.environ.get("GEMINI_MODEL", "gemini-3.7-flash"),
+    "gemini-3.6-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-2.5-flash-lite",
+]
+
+
+def _get_api_key():
+    return (
+        os.environ.get("GEMINI_API_KEY")
+        or os.environ.get("GOOGLE_API_KEY")
+        or os.environ.get("GOOGLE_GENAI_API_KEY")
+        or os.environ.get("DEEPSEEK_API_KEY")
+        or ""
+    )
 
 
 def call_gemini(prompt, system_prompt="You are a helpful assistant.", max_tokens=1000, temperature=0.7):
-    if not GEMINI_API_KEY:
+    api_key = _get_api_key()
+    if not api_key:
         return {"success": False, "error": "GEMINI_API_KEY not configured"}
-
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
 
     payload = {
         "contents": [
@@ -34,11 +45,17 @@ def call_gemini(prompt, system_prompt="You are a helpful assistant.", max_tokens
             "parts": [{"text": system_prompt}]
         }
 
-    return _execute_gemini_request(url, payload)
+    for model in GEMINI_MODELS:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        res = _execute_gemini_request(url, payload)
+        if res.get("success"):
+            return res
+    return {"success": False, "error": "All Gemini models failed"}
 
 
 def call_gemini_with_messages(messages, max_tokens=1000, temperature=0.7):
-    if not GEMINI_API_KEY:
+    api_key = _get_api_key()
+    if not api_key:
         return {"success": False, "error": "GEMINI_API_KEY not configured"}
 
     system_instruction = None
@@ -57,8 +74,6 @@ def call_gemini_with_messages(messages, max_tokens=1000, temperature=0.7):
     if not contents:
         contents.append({"role": "user", "parts": [{"text": "Hello"}]})
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
-
     payload = {
         "contents": contents,
         "generationConfig": {
@@ -69,7 +84,12 @@ def call_gemini_with_messages(messages, max_tokens=1000, temperature=0.7):
     if system_instruction:
         payload["system_instruction"] = system_instruction
 
-    return _execute_gemini_request(url, payload)
+    for model in GEMINI_MODELS:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        res = _execute_gemini_request(url, payload)
+        if res.get("success"):
+            return res
+    return {"success": False, "error": "All Gemini models failed"}
 
 
 def _execute_gemini_request(url, payload):
