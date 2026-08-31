@@ -23,6 +23,8 @@ jobs:
       - name: Unit tests
         run: pytest tests/ -v
         env:
+          GEMINI_API_KEY: ''
+          GOOGLE_API_KEY: ''
           DEEPSEEK_API_KEY: ''
           SUPABASE_URL: ''
           SUPABASE_SERVICE_ROLE_KEY: ''

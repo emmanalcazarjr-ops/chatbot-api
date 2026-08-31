@@ -46,7 +46,7 @@ def test_chat_returns_response_and_persists_history(monkeypatch):
         sent.append(messages)
         return {"success": True, "content": "I am Rush, sir."}
 
-    monkeypatch.setattr(api_main, "call_deepseek_with_messages", fake)
+    monkeypatch.setattr(api_main, "call_gemini_with_messages", fake)
 
     first = client.post("/api/chat", json={"message": "Who are you?"})
     assert first.status_code == 200
@@ -62,13 +62,13 @@ def test_chat_returns_response_and_persists_history(monkeypatch):
 
     roles = [m["role"] for m in sent[1]]
     assert roles.count("user") == 2  # both user turns present
-    assert any(m["role"] == "assistant" for m in sent[1])  # assistant reply remembered
+    assert any(m["role"] in ("assistant", "model") for m in sent[1])  # assistant reply remembered
 
 
 def test_chat_surfaces_ai_failure_as_500(monkeypatch):
     def fake(messages, max_tokens=1000, temperature=0.7):
-        return {"success": False, "error": "DEEPSEEK_API_KEY not configured"}
+        return {"success": False, "error": "GEMINI_API_KEY not configured"}
 
-    monkeypatch.setattr(api_main, "call_deepseek_with_messages", fake)
+    monkeypatch.setattr(api_main, "call_gemini_with_messages", fake)
     res = client.post("/api/chat", json={"message": "hello"})
     assert res.status_code == 500

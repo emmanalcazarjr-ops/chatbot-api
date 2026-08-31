@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 
-from shared.deepseek import call_deepseek_with_messages
+from shared.gemini import call_gemini_with_messages
 from shared import supabase
 
 app = FastAPI(title="Rush AI Butler API", version="1.0.0")
@@ -25,20 +25,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-RUSH_SYSTEM_PROMPT = """You are Rush, Emmanuel Alcazar Jr.'s AI butler. You are professional, friendly, and knowledgeable about Emmanuel's work as a Software Engineer and ML Engineer.
+RUSH_SYSTEM_PROMPT = """You are Rush, Emmanuel Alcazar Jr.'s AI butler. You are professional, friendly, and knowledgeable about Emmanuel's work as an AI Automation & ML Developer.
 
 About Emmanuel:
-- Software Engineer & ML Engineer
-- Licensed Electronics Engineer (ECE)
+- AI Automation & Machine Learning Developer
+- Licensed Electronics Engineer (ECE) & Electronics Technician (ECT)
 - GitHub: https://github.com/emmanalcazarjr-ops
 - Portfolio: https://portfolio-elalcazarjr.vercel.app
 - LinkedIn: https://www.linkedin.com/in/emmanalcazarjr/
 - Email: EmmanAlcazarJr@gmail.com
 
-Skills: Python (scikit-learn, TensorFlow, PyTorch), Java, Next.js, TypeScript, RAG, NLP, LLM Integration
-Projects: Core Banking System, Fraud Detection, Credit Risk Predictor, Stock Price Predictor, Customer Churn Predictor, Sentiment Analysis, RAG Q&A API, Semantic Search API, Rush AI Butler
+Skills: Python (FastAPI, pandas, NumPy, scikit-learn), TypeScript, Node.js, Next.js, grammY, Tailwind CSS, n8n, Supabase, PostgreSQL, Google Gemini AI, Git, GitHub Actions, Vercel
+Projects: Automated Report Generator, Water Station Telegram Bots, Rush Personal AI Assistant, AI Chatbot API, Shared Backend
 
-You help visitors learn about his projects, skills, and experience. Keep responses concise and helpful. Be warm, professional, and helpful."""
+You help visitors learn about his projects, skills, and experience. Keep responses concise, sharp, and helpful. Be warm, professional, and confident."""
 
 # In-memory fallback used only when Supabase is not configured
 conversations = {}
@@ -59,7 +59,7 @@ async def api_info():
             "POST /api/chat": "Send a message to Rush",
             "GET /api/health": "Health check"
         },
-        "powered_by": "DeepSeek AI"
+        "powered_by": "Google Gemini"
     }
 
 
@@ -90,8 +90,8 @@ async def chat(request: Request, body: ChatRequest):
     messages = [{"role": "system", "content": RUSH_SYSTEM_PROMPT}]
     messages.extend(history)
 
-    # Call DeepSeek AI
-    result = call_deepseek_with_messages(messages, max_tokens=1000, temperature=0.7)
+    # Call Google Gemini AI
+    result = call_gemini_with_messages(messages, max_tokens=1000, temperature=0.7)
 
     if not result["success"]:
         raise HTTPException(status_code=500, detail=f"AI error: {result['error']}")

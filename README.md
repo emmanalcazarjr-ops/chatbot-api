@@ -3,9 +3,9 @@
 [![CI](https://github.com/emmanalcazarjr-ops/chatbot-api/actions/workflows/ci.yml/badge.svg)](https://github.com/emmanalcazarjr-ops/chatbot-api/actions/workflows/ci.yml)
 ![Tests](https://img.shields.io/badge/tests-10%20passing-brightgreen)
 
-An AI-powered customer support chatbot built with FastAPI and DeepSeek AI. Rush maintains conversation memory across sessions, supports webhook integrations for automation platforms (n8n, Zapier, Make, GoHighLevel), and includes rate limiting and API key authentication. The chatbot is designed to answer questions about Emmanuel's projects, skills, and experience, making it a conversational portfolio assistant.
+An AI-powered customer support chatbot built with FastAPI and Google Gemini AI. Rush maintains conversation memory across sessions, supports webhook integrations for automation platforms (n8n, Zapier, Make, GoHighLevel), and includes rate limiting and API key authentication. The chatbot is designed to answer questions about Emmanuel's projects, skills, and experience, making it a conversational portfolio assistant.
 
-**Production practices:** CI pipeline (GitHub Actions) runs the unit-test suite on every push — API contract tests via FastAPI TestClient, offline DeepSeek client tests, and session-memory persistence checks.
+**Production practices:** CI pipeline (GitHub Actions) runs the unit-test suite on every push — API contract tests via FastAPI TestClient, offline AI client tests, and session-memory persistence checks.
 
 
 ## Screenshots
@@ -20,8 +20,8 @@ An AI-powered customer support chatbot built with FastAPI and DeepSeek AI. Rush 
 |-----------|------------|
 | Language | Python 3.12 |
 | Framework | FastAPI |
-| AI Model | DeepSeek AI (deepseek-chat) |
-| Database | Neon PostgreSQL (conversation history) |
+| AI Model | Google Gemini AI (gemini-3.7-flash) |
+| Database | Neon PostgreSQL / Supabase (conversation history) |
 | Deployment | Vercel Serverless Functions |
 | Docs | Auto-generated Swagger UI |
 
@@ -31,7 +31,7 @@ An AI-powered customer support chatbot built with FastAPI and DeepSeek AI. Rush 
 - Webhook support for n8n, Zapier, Make, and GoHighLevel
 - API key authentication for protected endpoints
 - Rate limiting to prevent abuse
-- Conversation history persistence in PostgreSQL
+- Conversation history persistence in PostgreSQL / Supabase
 - Interactive Swagger documentation at `/docs`
 
 ## API Endpoints
@@ -59,7 +59,7 @@ curl -X POST https://chatbot-api-two-teal.vercel.app/api/chat \
 ```json
 {
   "session_id": "abc-123",
-  "response": "Emmanuel has built several impressive projects including a Fraud Detection System, RAG Document Q&A API, and a Core Banking System...",
+  "response": "Emmanuel has built several impressive projects including an Automated Report Generator, Water Station Telegram Bots, and Rush Personal Assistant...",
   "done": true
 }
 ```
@@ -68,8 +68,8 @@ curl -X POST https://chatbot-api-two-teal.vercel.app/api/chat \
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `DEEPSEEK_API_KEY` | DeepSeek AI API key | Yes |
-| `DATABASE_URL` | Neon PostgreSQL connection string | Yes |
+| `GEMINI_API_KEY` | Google Gemini API key | Yes |
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
 | `API_KEY` | API key for authenticated endpoints | Yes |
 
 ## Local Development
@@ -87,35 +87,41 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Set environment variables
-export DEEPSEEK_API_KEY="your-key"
+export GEMINI_API_KEY="your-gemini-key"
 export DATABASE_URL="your-neon-url"
 export API_KEY="your-api-key"
 
 # Run locally
-uvicorn api.index:app --reload
+uvicorn api.main:app --reload
 ```
 
 ## Live Demo
 
 - API: https://chatbot-api-two-teal.vercel.app
-- Landing Page: https://chatbot-api-two-teal.vercel.app
-- Swagger Docs: https://chatbot-api-two-teal.vercel.app/docs
+- Docs: https://chatbot-api-two-teal.vercel.app/docs
+- Health: https://chatbot-api-two-teal.vercel.app/api/health
 
-## Case Study
+---
 
-**Problem:** Emmanuel's portfolio needed an always-on conversational touchpoint that could answer visitor questions about his projects, skills, and experience — without manual response time.
+## Case Study: Portfolio AI Butler
 
-**Solution:** A customer-support-style AI chatbot ("Rush") that answers portfolio questions with conversation memory, webhook automation, API key authentication, and rate limiting.
+**Problem:** Recruiters and clients visit a portfolio with specific questions about skills, experience, and project architecture, but static text cannot answer dynamic follow-ups or explain system design choices interactively.
 
-**Workflow:**
-1. Visitors interact with the live chat widget or call the API directly
-2. The bot maintains session memory so follow-up questions keep context
-3. Messages can also arrive via webhook from automation platforms (n8n, Zapier, Make, GoHighLevel)
-4. All conversations persist in PostgreSQL for history and auditing
+**Solution:** Built a production-ready conversational API that acts as an interactive representative. It maintains state across conversations, integrates with automation webhooks, and is protected with authentication and rate limiting.
 
-**Tools & Technologies:** Python 3.12, FastAPI, DeepSeek AI (deepseek-chat), Neon PostgreSQL, Vercel Serverless Functions, Swagger UI
+**Business Value:**
+- **24/7 Availability:** Answers candidate and client inquiries instantly without manual effort.
+- **Enterprise Integrations:** Webhook architecture allows direct connection to CRM pipelines and lead capture forms (n8n, Zapier, Make).
+- **Abuse Protection:** Per-client rate limiting and API key protection prevent denial-of-wallet attacks and service degradation.
 
-**Result:** A production-grade conversational AI assistant deployed live on Vercel, available 24/7 to any number of concurrent visitors.
+**Tools & Technologies:** Python 3.12, FastAPI, Google Gemini AI (gemini-3.7-flash), Supabase / Neon PostgreSQL, Vercel Serverless Functions, Swagger UI
+
+**Architecture Highlights:**
+- Stateless serverless deployment on Vercel with external persistent memory in PostgreSQL.
+- Isolated model integration layer with graceful error handling.
+- Layered middleware for authentication and rate limiting.
+
+**What I built:** The full backend API (chat, history, webhook, health endpoints), Gemini integration layer, PostgreSQL schema, rate limiting and auth middleware, Vercel deployment config, and the landing-page demo.A production-grade conversational AI assistant deployed live on Vercel, available 24/7 to any number of concurrent visitors.
 
 **Business Impact:**
 - Gives employers and clients an immediate, interactive demonstration of AI engineering skills
