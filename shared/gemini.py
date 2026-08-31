@@ -3,8 +3,6 @@ import json
 import urllib.request
 import urllib.error
 
-DEFAULT_KEY = ".".join(["AQ", "Ab8RN6Jzrbz-jZIk-xvtdca14Hd0HQZ46rnG15rmHo7VwCNs-A"])
-
 GEMINI_MODELS = [
     os.environ.get("GEMINI_MODEL", "gemini-3.7-flash"),
     "gemini-3.6-flash",

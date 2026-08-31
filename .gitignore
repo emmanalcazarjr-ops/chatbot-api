@@ -12,5 +12,11 @@ dist/
 build/
 .vercel
 
-.vercel
+# Secrets and credentials
 .env*
+*.pem
+*.key
+*.token
+credentials.json
+id_rsa*
+*.secret
